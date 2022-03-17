@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eventos</title>
+    <style>
+      @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+      @import url("https://fonts.googleapis.com/css?family=Montserrat");
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 400;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      .alert-container {
+        opacity: 0;
+        color: rgb(255, 255, 255);
+        font-size: 14px;
+        width: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: translate(0) scale(0.75) skewY(176deg);
+        transform-style: flat;
+      }
+
+      .alert-title {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        background: #d835aa;
+        padding: 8px 10px;
+        border-radius: 20px;
+        position: absolute;
+        top: -10px;
+      }
+
+      .alert-message {
+        opacity: 0;
+        color: #373d3f;
+        background: #fff;
+        padding: 8px 10px;
+        position: absolute;
+        text-align: center;
+        border-radius: 1rem;
+        box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+        top: 100px;
+      }
+
+      .alert-message::before {
+        content: "";
+        position: absolute;
+        top: -10px;
+        width: 0;
+        height: 0;
+        bottom: 100%;
+        left: 50%;
+        border: 0.75rem solid transparent;
+        border-top: none;
+        border-bottom-color: #fff;
+        filter: drop-shadow(0 -0.0625rem 0.0625rem rgba(0, 0, 0, 0.1));
+      }
+
+      .alert-box {
+        position: relative;
+        overflow: hidden;
+        border-radius: 15px;
+        background: rgb(36, 6, 73);
+        height: 90px !important;
+        width: 100%;
+        padding: 20px;
+        border: 3px solid #2fc9c5;
+      }
+
+      .alert-name {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-weight: 700;
+        font-size: 64px;
+        text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
+      }
+
+      span.animate__animated {
+        display: inline-block;
+      }
+
+      .alert-box.animate__animated:after {
+        position: absolute;
+        content: "";
+        opacity: 0;
+        height: 100%;
+        width: 200%;
+        left: -200%;
+        top: 0;
+        background: rgba(255, 255, 255, 0.13);
+        background: linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0.13) 0%,
+          rgba(255, 255, 255, 0.13) 77%,
+          rgba(255, 255, 255, 0.5) 92%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        animation: shine 4s ease;
+        transform: rotate(30deg);
+      }
+
+      @keyframes shine {
+        50% {
+          opacity: 1;
+        }
+
+        75% {
+          opacity: 1;
+          left: 200%;
+        }
+
+        100% {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="alert-container">
+        <div class="alert-box">
+          <div class="alert-name">
+            <span id="username-container"></span>
+          </div>
+        </div>
+        <div class="alert-title"></div>
+        <div class="alert-message"></div>
+      </div>
+    </div>
+    <script>
+      const queue = [];
+      let playing = false;
+      (function connectws() {
+        if ("WebSocket" in window) {
+          const ws = new WebSocket("ws://localhost:8080/");
+          ws.onopen = function () {
+            ws.send(
+              JSON.stringify({
+                request: "Subscribe",
+                events: {
+                  Twitch: [
+                    "Follow",
+                    "Cheer",
+                    "Raid",
+                    "Sub",
+                    "Resub",
+                    "GiftSub",
+                    "GiftBomb",
+                  ],
+                  StreamElements: ["Tip"],
+                },
+                id: "events",
+              })
+            );
+          };
+          ws.onmessage = function (event) {
+            event = JSON.parse(event.data);
+            console.log(event);
+            if (event.event) {
+              eventData = event.data;
+              eventType = event.event?.type;
+              eventSource = event.event?.source;
+              queue.push({
+                name:
+                  (eventData.displayName || eventData.username) ??
+                  eventData.message.displayName,
+                message: eventData.message
+                  ? eventData.message.hasOwnProperty("message")
+                    ? eventData.message.message
+                    : eventData.message
+                  : null,
+                sound: "sfx/xogum.mp3",
+                type: `${eventSource}${eventType}`,
+              });
+              alertEvent();
+            }
+          };
+          ws.onclose = function () {
+            setTimeout(connectws, 10000);
+          };
+        }
+      })();
+      async function alertEvent() {
+        if (queue.length <= 0 || playing) return;
+        playing = true;
+        const event = queue.shift();
+        if (event.hasOwnProperty("sound")) {
+          playSound(event.sound)
+            .then(() => {
+              if (event.hasOwnProperty("message") && event.message.length)
+                return;
+              hideEvent();
+            })
+            .catch((err) => hideEvent());
+        } else {
+          setTimeout(function () {
+            hideEvent();
+          }, event.timeout ?? 4000);
+        }
+        const name = event.name;
+        const message = event.message;
+        const animation = "wobble";
+        const animate = (text, animation) =>
+          text
+            .split("")
+            .map((char, index) => {
+              return `<span class="animate__animated animate__${animation} animate__infinite" style="animation-delay: ${index}00ms;">${char}</span>`;
+            })
+            .join("");
+        // vanilla es6 query selection (can use libraries and frameworks too)
+        const alertContainer = document.querySelector(".alert-container");
+        const alertMessage = document.querySelector(".alert-message");
+        const alertTitle = document.querySelector(".alert-title");
+        const userNameContainer = document.querySelector("#username-container");
+        // change the inner html to animate it 🤪
+        alertTitle.innerHTML = event.type;
+        userNameContainer.innerHTML = animate(name, "tada");
+        fitty("#username-container", {
+          minSize: 14,
+          maxSize: 64,
+        });
+        alertContainer.style.opacity = 1;
+        animateCSS(".alert-container", "fadeIn");
+        animateCSS(".alert-box", animation);
+        animateCSS(".alert-title", animation);
+        await animateCSS(".alert-name", animation);
+        if (typeof message === "string" && message.length > 0) {
+          alertMessage.innerHTML = message;
+          alertMessage.style.opacity = 1;
+          await animateCSS(".alert-message", "fadeIn");
+          tts(message)
+            .then(() => hideEvent())
+            .catch((err) => hideEvent());
+        }
+        function hideEvent() {
+          animateCSS(".alert-container", "zoomOut").then(() => {
+            alertContainer.style.opacity = 0;
+            alertMessage.style.opacity = 0;
+            playing = false;
+            alertEvent();
+          });
+        }
+      }
+      function animateCSS(element, animation, prefix = "animate__") {
+        return new Promise((resolve, reject) => {
+          const animationName = `${prefix}${animation}`;
+          const node = document.querySelector(element);
+          node.classList.add(`${prefix}animated`, animationName);
+          function handleAnimationEnd(event) {
+            event.stopPropagation();
+            node.classList.remove(`${prefix}animated`, animationName);
+            resolve("Animation ended");
+          }
+          node.addEventListener("animationend", handleAnimationEnd, {
+            once: true,
+          });
+        });
+      }
+      function playSound(uri, volume = 1) {
+        return new Promise((resolve, reject) => {
+          try {
+            const audioCtx = new AudioContext();
+            const audioGain = audioCtx.createGain();
+            audioGain.gain.value = volume;
+            audioGain.connect(audioCtx.destination);
+            const source = audioCtx.createBufferSource();
+            fetch(uri)
+              .then((res) => res.arrayBuffer())
+              .then(async (arrayBuff) => {
+                source.buffer = await audioCtx
+                  .decodeAudioData(arrayBuff)
+                  .catch((err) => reject(err));
+                source.connect(audioGain);
+                source.start(audioCtx.currentTime);
+                source.onended = () => resolve();
+              });
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+      function tts(text) {
+        const langString =
+          "Cristiano, Vitoria, Ricardo, Carla, Bianca, Miguel, Mia, Enrique, Conchita, Joanna, es-LA_SofiaVoice, pt-BR_IsabelaVoice, pt-BR-Standard-A, pt-PT-Wavenet-A, pt-PT-Wavenet-B, pt-PT-Wavenet-C, pt-PT-Wavenet-D";
+        const languages = langString.split(",").map((str) => str.trim());
+        const languageCode = languages[(Math.random() * languages.length) | 0];
+        return playSound(
+          `https://api.streamelements.com/kappa/v2/speech?voice=${languageCode}&text=${encodeURI(
+            text
+          )}`
+        );
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/fitty@2.3.0/dist/fitty.min.js"></script>
+  </body>
+</html>
