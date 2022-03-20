@@ -5,16 +5,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
-      crossorigin="anonymous"
-    />
     <style>
       @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+      @import url("https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css");
 
-      img {
+      .toast-body img {
         max-height: 28px;
       }
 
@@ -34,11 +29,18 @@
       import format from "https://esm.run/date-fns/format";
       import tinyColor from "https://esm.run/tinycolor2";
 
+      function RNG(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min)) + min;
+      }
+
       function animateCSS(element, animation, prefix = "animate__") {
         return new Promise((resolve, reject) => {
           const animationName = `${prefix}${animation}`;
           const node =
-            typeof element === "object"
+            typeof element === "object" &&
+            (element instanceof Node || element instanceof HTMLElement)
               ? element
               : document.querySelector(element);
           node.classList.add(`${prefix}animated`, animationName);
@@ -80,31 +82,64 @@
 
       function html_encode(e) {
         return e.replace(/[<>"^]/g, function (e) {
-          return "&#" + e.charCodeAt(0) + ";";
+          return `&#${e.charCodeAt(0)};`;
         });
       }
 
       (function connectWs() {
         if ("WebSocket" in window) {
           const ws = new WebSocket("ws://localhost:8080/");
+
           ws.onopen = function () {
             ws.send(
               JSON.stringify({
                 request: "Subscribe",
-                events: { Twitch: ["ChatMessage"] },
+                events: {
+                  Twitch: ["ChatMessage", "FirstWord"],
+                  fileWatcher: ["Changed"],
+                },
                 id: "chat",
               })
             );
           };
-          ws.onmessage = async ({ data, type }) => {
+
+          ws.onmessage = async (evtData) => {
+            const { data, type } = evtData;
             if (type !== "message") return;
             const { data: event, status } = JSON.parse(data);
+            if (event) console.log(event);
+            const roles = ["viewer", "vip", "mod", "streamer"];
+
+            if (event?.name === "eventImage" && event?.lines?.length) {
+              const image = document.createElement("img");
+              image.src = event.lines.pop();
+              image.style.maxHeight = "250px";
+              const content = document.createElement("div");
+              content.append(image);
+              content.classList.add(
+                "position-absolute",
+                "h-100",
+                "w-100",
+                "d-flex",
+                "justify-content-center",
+                "align-items-center"
+              );
+              document.body.append(content);
+              animateCSS(image, "fadeIn").then(() =>
+                animateCSS(image, "rubberBand").then(() =>
+                  animateCSS(image, "fadeOut").then(() => content.remove())
+                )
+              );
+            }
+
             if (event?.message) {
               const {
                 msgId,
                 color,
                 username,
                 displayName,
+                subscriber,
+                role,
                 emotes,
                 message,
                 isMe,
@@ -113,7 +148,31 @@
                 hasBits,
                 isReply,
               } = event.message;
+              const roleName = roles[role - 1];
+
               if (isCustomReward || isReply || hasBits) return;
+
+              if (subscriber && emotes && emotes.length) {
+                emotes.map((emote, idx) => {
+                  const elEmote = document.createElement("img");
+                  elEmote.src = emote.imageUrl;
+                  elEmote.classList.add("position-absolute");
+                  elEmote.style.right = `${RNG(10, window.innerWidth - 10)}px`;
+                  elEmote.style.bottom = `${RNG(
+                    10,
+                    window.innerHeight - 10
+                  )}px`;
+                  animateCSS(elEmote, "fadeIn").then(() =>
+                    animateCSS(elEmote, "rubberBand").then(() =>
+                      animateCSS(elEmote, "fadeOut").then(() =>
+                        elEmote.remove()
+                      )
+                    )
+                  );
+                  document.body.append(elEmote);
+                });
+              }
+
               const profilePic = await fetch(
                 `https://decapi.me/twitch/avatar/${username}`
               ).then((res) => res.text());
@@ -138,17 +197,20 @@
       }">${attachEmotes(message, emotes)}</div>
       `;
               document.getElementById("toasts").append(toast);
+
               animateCSS(toast, "fadeInRight").then(() => {
                 setTimeout(() => {
                   animateCSS(toast, "fadeOutRight").then(() => toast.remove());
                 }, 4000);
               });
+
               new Toast(toast, {
                 animation: false,
                 autohide: false,
               }).show();
             }
           };
+
           ws.onclose = function () {
             setTimeout(connectWs, 10000);
           };
