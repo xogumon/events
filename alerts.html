@@ -8,32 +8,17 @@
     <style>
       @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
       @import url("https://fonts.googleapis.com/css?family=Montserrat");
-
-      * {
-        box-sizing: border-box;
-      }
+      @import url("https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css");
 
       body {
         font-family: "Montserrat", sans-serif;
         font-weight: 400;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
       }
 
       .alert-container {
         opacity: 0;
         color: rgb(255, 255, 255);
         font-size: 14px;
-        width: 100%;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         transform: translate(0) scale(0.75) skewY(176deg);
         transform-style: flat;
       }
@@ -44,7 +29,6 @@
         background: #d835aa;
         padding: 8px 10px;
         border-radius: 20px;
-        position: absolute;
         top: -10px;
       }
 
@@ -53,21 +37,19 @@
         color: #373d3f;
         background: #fff;
         padding: 8px 10px;
-        position: absolute;
-        text-align: center;
         border-radius: 1rem;
         box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
         top: 100px;
       }
 
       .alert-message::before {
-        content: "";
         position: absolute;
+        content: "";
         top: -10px;
         width: 0;
         height: 0;
-        bottom: 100%;
         left: 50%;
+        bottom: 100%;
         border: 0.75rem solid transparent;
         border-top: none;
         border-bottom-color: #fff;
@@ -75,23 +57,14 @@
       }
 
       .alert-box {
-        position: relative;
-        overflow: hidden;
+        height: 90px !important;
         border-radius: 15px;
         background: rgb(36, 6, 73);
-        height: 90px !important;
-        width: 100%;
         padding: 20px;
         border: 3px solid #2fc9c5;
       }
 
       .alert-name {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        font-weight: 700;
         font-size: 64px;
         text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
       }
@@ -137,24 +110,31 @@
     </style>
   </head>
 
-  <body>
-    <div class="container">
-      <div class="alert-container">
-        <div class="alert-box">
-          <div class="alert-name">
-            <span id="username-container"></span>
-          </div>
+  <body
+    class="bg-dark overflow-hidden d-flex justify-content-center align-items-center vh-100"
+  >
+    <div
+      class="alert-container position-relative d-flex justify-content-center align-items-center"
+    >
+      <div class="alert-box position-relative overflow-hidden w-100">
+        <div
+          class="alert-name d-flex justify-content-center align-items-center fw-bold w-100 h-100"
+        >
+          <span id="username-container"></span>
         </div>
-        <div class="alert-title"></div>
-        <div class="alert-message"></div>
       </div>
+      <div class="alert-title position-absolute"></div>
+      <div class="alert-message position-absolute text-center"></div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/fitty@2.3.0/dist/fitty.min.js"></script>
     <script>
       const queue = [];
       let playing = false;
-      (function connectws() {
+
+      (function connectWs() {
         if ("WebSocket" in window) {
           const ws = new WebSocket("ws://localhost:8080/");
+
           ws.onopen = function () {
             ws.send(
               JSON.stringify({
@@ -165,7 +145,7 @@
                     "Cheer",
                     "Raid",
                     "Sub",
-                    "Resub",
+                    "ReSub",
                     "GiftSub",
                     "GiftBomb",
                   ],
@@ -175,14 +155,16 @@
               })
             );
           };
+
           ws.onmessage = function (event) {
             event = JSON.parse(event.data);
             console.log(event);
             if (event.event) {
-              eventData = event.data;
-              eventType = event.event?.type;
-              eventSource = event.event?.source;
-              queue.push({
+              const eventData = event.data,
+                eventType = event.event?.type,
+                eventSource = event.event?.source;
+
+              let alertData = {
                 name:
                   (eventData.displayName || eventData.username) ??
                   eventData.message.displayName,
@@ -192,19 +174,32 @@
                     : eventData.message
                   : null,
                 type: `${eventSource}${eventType}`,
-              });
+              };
+
+              if (eventData.cumulativeMonths) {
+                alertData = {
+                  ...alertData,
+                  months: eventData.cumulativeMonths,
+                };
+              }
+
+              queue.push(alertData);
               alertEvent();
             }
           };
+
           ws.onclose = function () {
-            setTimeout(connectws, 10000);
+            setTimeout(connectWs, 10000);
           };
         }
       })();
       async function alertEvent() {
         if (queue.length <= 0 || playing) return;
+
         playing = true;
+
         const event = queue.shift();
+
         if (event.hasOwnProperty("sound")) {
           playSound(event.sound)
             .then(() => {
@@ -218,33 +213,39 @@
             hideEvent();
           }, event.timeout ?? 4000);
         }
-        const name = event.name;
-        const message = event.message;
-        const animation = "wobble";
-        const animate = (text, animation) =>
-          text
-            .split("")
-            .map((char, index) => {
-              return `<span class="animate__animated animate__${animation} animate__infinite" style="animation-delay: ${index}00ms;">${char}</span>`;
-            })
-            .join("");
-        // vanilla es6 query selection (can use libraries and frameworks too)
-        const alertContainer = document.querySelector(".alert-container");
-        const alertMessage = document.querySelector(".alert-message");
-        const alertTitle = document.querySelector(".alert-title");
-        const userNameContainer = document.querySelector("#username-container");
-        // change the inner html to animate it 🤪
+
+        const name = event.name,
+          message = event.message,
+          animation = "wobble",
+          animate = (text, animation) =>
+            text
+              .split("")
+              .map((char, index) => {
+                return `<span class="animate__animated animate__${animation} animate__infinite" style="animation-delay: ${index}00ms;">${char}</span>`;
+              })
+              .join("");
+
+        const alertContainer = document.querySelector(".alert-container"),
+          alertMessage = document.querySelector(".alert-message"),
+          alertTitle = document.querySelector(".alert-title"),
+          userNameContainer = document.querySelector("#username-container");
+
         alertTitle.innerHTML = event.type;
+
         userNameContainer.innerHTML = animate(name, "tada");
+
         fitty("#username-container", {
           minSize: 14,
           maxSize: 64,
         });
+
         alertContainer.style.opacity = 1;
+
         animateCSS(".alert-container", "fadeIn");
         animateCSS(".alert-box", animation);
         animateCSS(".alert-title", animation);
         await animateCSS(".alert-name", animation);
+
         if (typeof message === "string" && message.length > 0) {
           alertMessage.innerHTML = message;
           alertMessage.style.opacity = 1;
@@ -253,8 +254,9 @@
             .then(() => hideEvent())
             .catch((err) => hideEvent());
         }
+
         function hideEvent() {
-          animateCSS(".alert-container", "zoomOut").then(() => {
+          animateCSS(".alert-container", "fadeOut").then(() => {
             alertContainer.style.opacity = 0;
             alertMessage.style.opacity = 0;
             playing = false;
@@ -262,6 +264,7 @@
           });
         }
       }
+
       function animateCSS(element, animation, prefix = "animate__") {
         return new Promise((resolve, reject) => {
           const animationName = `${prefix}${animation}`;
@@ -312,6 +315,5 @@
         );
       }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/fitty@2.3.0/dist/fitty.min.js"></script>
   </body>
 </html>
