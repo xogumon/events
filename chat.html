@@ -81,9 +81,11 @@
       }
 
       function html_encode(e) {
-        return e.replace(/[<>"^]/g, function (e) {
-          return `&#${e.charCodeAt(0)};`;
-        });
+        if (typeof e === "string") {
+          return e.replace(/[<>"^]/g, function (e) {
+            return `&#${e.charCodeAt(0)};`;
+          });
+        }
       }
 
       (function connectWs() {
@@ -133,9 +135,9 @@
             }
 
             if (event?.message) {
+              let { color } = event.message;
               const {
                 msgId,
-                color,
                 username,
                 displayName,
                 subscriber,
@@ -151,6 +153,7 @@
               const roleName = roles[role - 1];
 
               if (isCustomReward || isReply || hasBits) return;
+              if (typeof color === "undefined") color = tinyColor.random();
 
               if (subscriber && emotes && emotes.length) {
                 emotes.map((emote, idx) => {
