@@ -210,7 +210,7 @@
               let result = emotes.find(
                 (emote) => emote.text === html_encode(text)
               );
-              if (result) return `<img class="emote" src="${result.image}"/>`;
+              if (result && result.image) return `<img class="emote" src="${result.image}"/>`;
               return text;
             });
           }
@@ -282,7 +282,9 @@
                     },
                     args: {
                       winner: event.name,
-                      prize: prize.toLowerCase(),
+                      targetUserName: event.name.toLowerCase(),
+                      prize: isNaN(prize) ? prize.toLowerCase() : `${prize} XP`,
+                      amount: isNaN(prize) ? 0 : prize,
                     },
                     id: "WheelOfFortune",
                   })

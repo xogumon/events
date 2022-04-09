@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Feed</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css?family=Montserrat");
+      @import url("https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css");
+      @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+
+      body {
+        font-family: "Montserrat", sans-serif;
+        overflow-x: hidden;
+      }
+
+      .show {
+        opacity: 1 !important;
+      }
+
+      .hide {
+        opacity: 0 !important;
+      }
+
+      .emote {
+        max-width: 2rem;
+      }
+    </style>
+  </head>
+
+  <body class="bg-dark text-light">
+    <div class="container-fluid">
+      <div class="events my-3"></div>
+    </div>
+    <script type="module">
+      import Toast from "https://esm.run/bootstrap/js/dist/toast";
+      import format from "https://esm.run/date-fns/format";
+      import tinyColor from "https://esm.run/tinycolor2";
+
+      (function connectWs() {
+        if ("WebSocket" in window) {
+          function attachEmotes(message, emotes) {
+            message = html_encode(message);
+            emotes = emotes.map((emote) => {
+              return {
+                text: html_encode(
+                  message.substring(emote.StartIndex, emote.EndIndex + 1)
+                ),
+                image: emote.ImageUrl,
+              };
+            });
+            return message.replace(/([^\s]*)/gi, function (text) {
+              if (!text.length) return text;
+              let result = emotes.find(
+                (emote) => emote.text === html_encode(text)
+              );
+              if (result && result.image)
+                return `<img class="emote" src="${result.image.replace(
+                  /animated\/(.*)\.gif/i,
+                  "static/$1.png"
+                )}"/>`;
+              return text;
+            });
+          }
+
+          function html_encode(e) {
+            if (typeof e === "string") {
+              return e.replace(/[<>"^]/g, function (e) {
+                return `&#${e.charCodeAt(0)};`;
+              });
+            }
+          }
+
+          function animateCSS(element, animation, prefix = "animate__") {
+            return new Promise((resolve, reject) => {
+              const animationName = `${prefix}${animation}`;
+              const node =
+                typeof element === "object" &&
+                (element instanceof Node || element instanceof HTMLElement)
+                  ? element
+                  : document.querySelector(element);
+              node.classList.add(`${prefix}animated`, animationName);
+              function handleAnimationEnd(event) {
+                event.stopPropagation();
+                node.classList.remove(`${prefix}animated`, animationName);
+                resolve("Animation ended");
+              }
+              node.addEventListener("animationend", handleAnimationEnd, {
+                once: true,
+              });
+            });
+          }
+
+          const ws = new WebSocket("ws://localhost:8080/");
+
+          ws.onopen = function () {
+            ws.send(
+              JSON.stringify({
+                request: "Subscribe",
+                events: {
+                  general: ["Custom"],
+                },
+                id: "feed",
+              })
+            );
+          };
+
+          ws.onmessage = function (event) {
+            try {
+              event = JSON.parse(event?.data)?.data;
+              if (!event) return;
+              const eventData = event.hasOwnProperty("data")
+                ? JSON.parse(event?.data)
+                : null;
+              if (!eventData) return;
+              if (!eventData?.eventName) return;
+              const toast = document.createElement("div");
+              toast.classList.add("toast", "w-100", "bg-dark", "text-light");
+              toast.ariaAtomic = true;
+              toast.ariaLive = "assertive";
+              toast.setAttribute("role", "chat");
+              toast.innerHTML = `
+      <div class="toast-header">
+        <span class="me-auto fw-bold fs-6">${eventData.eventName} ➡️ ${
+                eventData?.user || eventData?.userName
+              }</span>
+        <small>${format(new Date(), "HH:mm")}</small>
+      </div>
+      <div class="toast-body">${attachEmotes(
+        eventData?.message ||
+          eventData?.messageStripped ||
+          eventData?.raiderNames ||
+          "",
+        eventData?.cheerEmoteCount
+          ? eventData?.cheerEmotes
+          : eventData?.emoteCount
+          ? eventData?.emotes
+          : []
+      )}</div>
+      `;
+              document.querySelector(".events").prepend(toast);
+              animateCSS(toast, "fadeInRight");
+              new Toast(toast, {
+                animation: false,
+                autohide: false,
+              }).show();
+            } catch (err) {
+              console.log(err);
+            }
+          };
+
+          ws.onclose = function () {
+            setTimeout(connectWs, 10000);
+          };
+        }
+      })();
+    </script>
+  </body>
+</html>
