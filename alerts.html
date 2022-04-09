@@ -248,7 +248,7 @@
               if (!eventData?.eventName) return;
               queue.push({
                 type: eventData?.eventName,
-                name: eventData?.user,
+                name: eventData?.user || eventData?.userName,
                 wheel: eventData?.spinWheel ?? false,
                 message: eventData?.message || eventData?.messageStripped,
                 emotes: eventData?.cheerEmoteCount
