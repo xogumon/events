@@ -321,7 +321,7 @@
                   case "Sub":
                     return createToast({
                       title: "⭐ Sub",
-                      body: `<div class="fs-5">${event?.data?.displayName}</div>`,
+                      body: `${event?.data?.displayName}`,
                     });
 
                   case "ReSub":
@@ -331,7 +331,7 @@
                     );
                     return createToast({
                       title: `⭐ ReSub (${event?.data?.cumulativeMonths}x)`,
-                      body: `<div class="fs-5">${event?.data?.displayName}</div>
+                      body: `${event?.data?.displayName}
                       ${
                         message
                           ? `<div class="alert alert-success m-0 p-2">${message}</div>`
@@ -360,7 +360,7 @@
                   case "Follow":
                     return createToast({
                       title: "💜 Follow",
-                      body: `<span class="fs-5">${event?.data?.displayName}</span>`,
+                      body: `${event?.data?.displayName}`,
                     });
 
                   case "Cheer":
@@ -378,7 +378,7 @@
                       title: `👋 ${event?.event?.type} (${
                         event?.data?.viewerCount || 0
                       } viewers)`,
-                      body: `<span class="fs-5">${event?.data?.displayName}</span>`,
+                      body: `${event?.data?.displayName}`,
                     });
 
                   case "HypeTrainStart":
