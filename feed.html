@@ -10,9 +10,33 @@
       @import url("https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css");
       @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
 
+      /* ===== Scrollbar CSS ===== */
+      /* Firefox */
+      * {
+        scrollbar-width: auto;
+        scrollbar-color: #18181b #18181b;
+      }
+
+      /* Chrome, Edge, and Safari */
+      *::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      *::-webkit-scrollbar-track {
+        background: #18181b;
+      }
+
+      *::-webkit-scrollbar-thumb {
+        background-color: #18181b;
+        border-radius: 5px;
+        border: 1px solid #6c757d;
+      }
+
       body {
         font-family: "Montserrat", sans-serif;
+        background-color: #18181b;
         overflow-x: hidden;
+        overflow-y: scroll;
       }
 
       .show {
@@ -29,132 +53,273 @@
     </style>
   </head>
 
-  <body class="bg-dark text-light">
+  <body class="text-light">
     <div class="container-fluid">
       <div class="events my-3"></div>
     </div>
     <script type="module">
       import Toast from "https://esm.run/bootstrap/js/dist/toast";
       import format from "https://esm.run/date-fns/format";
-      import tinyColor from "https://esm.run/tinycolor2";
 
-      (function connectWs() {
-        if ("WebSocket" in window) {
-          function attachEmotes(message, emotes) {
-            message = html_encode(message);
-            emotes = emotes.map((emote) => {
-              return {
-                text: html_encode(
-                  message.substring(emote.StartIndex, emote.EndIndex + 1)
-                ),
-                image: emote.ImageUrl,
-              };
-            });
-            return message.replace(/([^\s]*)/gi, function (text) {
-              if (!text.length) return text;
-              let result = emotes.find(
-                (emote) => emote.text === html_encode(text)
-              );
-              if (result && result.image)
-                return `<img class="emote" src="${result.image.replace(
-                  /animated\/(.*)\.gif/i,
-                  "static/$1.png"
-                )}"/>`;
-              return text;
-            });
-          }
-
-          function html_encode(e) {
-            if (typeof e === "string") {
-              return e.replace(/[<>"^]/g, function (e) {
-                return `&#${e.charCodeAt(0)};`;
+      try {
+        (function connectWs() {
+          if ("WebSocket" in window) {
+            function attachEmotes(message, emotes) {
+              if (!message.length) return;
+              message = html_encode(message);
+              emotes = emotes.map((emote) => {
+                return {
+                  text: html_encode(
+                    message.substring(emote.startIndex, emote.endIndex + 1)
+                  ),
+                  image: emote.imageUrl,
+                };
+              });
+              return message.replace(/([^\s]*)/gi, function (text) {
+                if (!text.length) return text;
+                let result = emotes.find(
+                  (emote) => emote.text === html_encode(text)
+                );
+                if (result && result.image)
+                  return `<img class="emote" src="${result.image.replace(
+                    /animated\/(.*)\.gif/i,
+                    "static/$1.png"
+                  )}"/>`;
+                return text;
               });
             }
-          }
 
-          function animateCSS(element, animation, prefix = "animate__") {
-            return new Promise((resolve, reject) => {
-              const animationName = `${prefix}${animation}`;
-              const node =
-                typeof element === "object" &&
-                (element instanceof Node || element instanceof HTMLElement)
-                  ? element
-                  : document.querySelector(element);
-              node.classList.add(`${prefix}animated`, animationName);
-              function handleAnimationEnd(event) {
-                event.stopPropagation();
-                node.classList.remove(`${prefix}animated`, animationName);
-                resolve("Animation ended");
+            function html_encode(e) {
+              if (typeof e === "string") {
+                return e.replace(/[<>"^]/g, function (e) {
+                  return `&#${e.charCodeAt(0)};`;
+                });
               }
-              node.addEventListener("animationend", handleAnimationEnd, {
-                once: true,
+            }
+
+            function animateCSS(element, animation, prefix = "animate__") {
+              return new Promise((resolve, reject) => {
+                const animationName = `${prefix}${animation}`;
+                const node =
+                  typeof element === "object" &&
+                  (element instanceof Node || element instanceof HTMLElement)
+                    ? element
+                    : document.querySelector(element);
+                node.classList.add(`${prefix}animated`, animationName);
+                function handleAnimationEnd(event) {
+                  event.stopPropagation();
+                  node.classList.remove(`${prefix}animated`, animationName);
+                  resolve("Animation ended");
+                }
+                node.addEventListener("animationend", handleAnimationEnd, {
+                  once: true,
+                });
               });
-            });
-          }
+            }
 
-          const ws = new WebSocket("ws://localhost:8080/");
-
-          ws.onopen = function () {
-            ws.send(
-              JSON.stringify({
-                request: "Subscribe",
-                events: {
-                  general: ["Custom"],
+            function createToast(args, autohide = false) {
+              const { title, body } = Object.assign(
+                {
+                  title: "",
+                  body: "",
                 },
-                id: "feed",
-              })
-            );
-          };
-
-          ws.onmessage = function (event) {
-            try {
-              event = JSON.parse(event?.data)?.data;
-              if (!event) return;
-              const eventData = event.hasOwnProperty("data")
-                ? JSON.parse(event?.data)
-                : null;
-              if (!eventData) return;
-              if (!eventData?.eventName) return;
+                args,
+                {}
+              );
               const toast = document.createElement("div");
-              toast.classList.add("toast", "w-100", "bg-dark", "text-light");
+              toast.classList.add(
+                "toast",
+                "w-100",
+                "bg-dark",
+                "text-light",
+                "mb-3"
+              );
               toast.ariaAtomic = true;
               toast.ariaLive = "assertive";
               toast.setAttribute("role", "chat");
               toast.innerHTML = `
-      <div class="toast-header">
-        <span class="me-auto fw-bold fs-6">${eventData.eventName} ➡️ ${
-                eventData?.user || eventData?.userName
-              }</span>
+      <div class="toast-header bg-secondary text-light">
+        <span class="me-auto">${title}</span>
         <small>${format(new Date(), "HH:mm")}</small>
       </div>
-      <div class="toast-body">${attachEmotes(
-        eventData?.message ||
-          eventData?.messageStripped ||
-          eventData?.raiderNames ||
-          "",
-        eventData?.cheerEmoteCount
-          ? eventData?.cheerEmotes
-          : eventData?.emoteCount
-          ? eventData?.emotes
-          : []
-      )}</div>
+      <div class="toast-body">${body}</div>
       `;
               document.querySelector(".events").prepend(toast);
               animateCSS(toast, "fadeInRight");
               new Toast(toast, {
                 animation: false,
-                autohide: false,
+                autohide,
               }).show();
-            } catch (err) {
-              console.log(err);
             }
-          };
 
-          ws.onclose = function () {
-            setTimeout(connectWs, 10000);
-          };
-        }
-      })();
+            const ws = new WebSocket("ws://localhost:8080/");
+
+            ws.onopen = function () {
+              ws.send(
+                JSON.stringify({
+                  request: "Subscribe",
+                  events: {
+                    twitch: [
+                      "Follow",
+                      "Cheer",
+                      "Sub",
+                      "ReSub",
+                      "GiftSub",
+                      "GiftBomb",
+                      "Raid",
+                      "HypeTrainStart",
+                      "HypeTrainUpdate",
+                      "HypeTrainLevelUp",
+                      "HypeTrainEnd",
+                      "RewardRedemption",
+                      "CommunityGoalContribution",
+                      "CommunityGoalEnded",
+                      "StreamUpdate",
+                      "Whisper",
+                      "FirstWord",
+                      "SubCounterRollover",
+                      "BroadcastUpdate",
+                      "StreamUpdateGameOnConnect",
+                      "Host",
+                    ],
+                    streamElements: ["Tip"],
+                  },
+                  id: "feed",
+                })
+              );
+            };
+
+            ws.onmessage = function (event) {
+              event = JSON.parse(event?.data);
+              if (!event) return;
+              console.log(event);
+
+              if (event?.id === "feed" && event?.status === "ok")
+                return createToast({
+                  title: "🔴 Conectado",
+                  body: "Feed conectado com sucesso!",
+                });
+
+              if (event?.event?.source === "StreamElements") {
+                if (event?.event?.type === "Tip")
+                  return createToast({
+                    title: `🪙 ${Number(event?.data?.amount).toLocaleString(
+                      "pt-BR",
+                      {
+                        style: "currency",
+                        currency: event?.data?.currency,
+                      }
+                    )} ↔️ ${event?.data?.username}`,
+                    body: event?.data?.message,
+                  });
+              }
+
+              if (event?.event?.source === "Twitch") {
+                switch (event?.event?.type) {
+                  case "Sub":
+                    return createToast({
+                      title: "⭐ Sub",
+                      body: `<div class="fs-5">${event?.data?.displayName}</div>`,
+                    });
+
+                  case "ReSub":
+                    const message = attachEmotes(
+                      event?.data?.message || "",
+                      event?.data?.emotes || []
+                    );
+                    return createToast({
+                      title: `⭐ ReSub (${event?.data?.cumulativeMonths}x)`,
+                      body: `<div class="fs-5">${event?.data?.displayName}</div>
+                      ${
+                        message
+                          ? `<div class="alert alert-success m-0 p-2">${message}</div>`
+                          : ""
+                      }`,
+                    });
+
+                  case "GiftSub":
+                    return createToast({
+                      title: `⭐ Gift Sub`,
+                      body: `<div class="fs-6">${
+                        event?.data?.recipientDisplayName
+                      } ganhou uma ${
+                        event?.data?.cumulativeMonths > 1
+                          ? "reinscrição"
+                          : "inscrição"
+                      } de ${event?.data?.displayName}!</div>`,
+                    });
+
+                  case "GiftBomb":
+                    return createToast({
+                      title: `⭐ Gift Bomb`,
+                      body: `${event?.data?.displayName} enviou ${event?.data?.gifts} gift subs!`,
+                    });
+
+                  case "Follow":
+                    return createToast({
+                      title: "💜 Follow",
+                      body: `<span class="fs-5">${event?.data?.displayName}</span>`,
+                    });
+
+                  case "Cheer":
+                    return createToast({
+                      title: `💎 ${event?.data.message?.bits} bits ↔️ ${event?.data?.message?.displayName}`,
+                      body: attachEmotes(
+                        event?.data?.message?.message || "",
+                        event?.data?.message?.cheerEmotes || []
+                      ),
+                    });
+
+                  case "Raid":
+                  case "Host":
+                    return createToast({
+                      title: `👋 ${event?.event?.type} (${
+                        event?.data?.viewerCount || 0
+                      } viewers)`,
+                      body: `<span class="fs-5">${event?.data?.displayName}</span>`,
+                    });
+
+                  case "HypeTrainStart":
+                    return createToast({
+                      title: `🚂 Hype train!`,
+                      body: "Olha o trem chegando!",
+                    });
+
+                  case "HypeTrainLevelUp":
+                    return createToast({
+                      title: `🚂 Hype train!`,
+                      body: `Hype train level ${event?.data?.level}!`,
+                    });
+
+                  case "HypeTrainEnd":
+                    return createToast({
+                      title: `🚂 Hype train!`,
+                      body: `Hype train passou!`,
+                    });
+
+                  case "Whisper":
+                    return createToast(
+                      {
+                        title: `🤫 Sussurro ↔️ ${event?.data?.message?.displayName}`,
+                        body: event?.data?.message?.message,
+                      },
+                      true
+                    );
+
+                  default:
+                    break;
+                }
+              }
+            };
+
+            ws.onclose = function () {
+              setTimeout(connectWs, 10000);
+            };
+          }
+        })();
+      } catch (err) {
+        console.log(err);
+      }
     </script>
   </body>
 </html>
