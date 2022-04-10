@@ -23,7 +23,8 @@
       }
 
       *::-webkit-scrollbar-track,
-      .accordion-body {
+      .accordion-body,
+      .accordion-item {
         background: #18181b;
       }
 
@@ -38,10 +39,16 @@
         background-color: #18181b;
       }
 
-      .events {
-        max-height: 600px;
+      .overflowX-hidden {
         overflow-x: hidden;
+      }
+
+      .overflowY-scroll {
         overflow-y: scroll;
+      }
+
+      .max-height {
+        max-height: calc(100vh - (38px * 2));
       }
 
       .show {
@@ -79,7 +86,9 @@
           aria-labelledby="panelSoundBoardHeader"
           data-bs-parent="#panel"
         >
-          <div class="accordion-body text-center">
+          <div
+            class="accordion-body overflowX-hidden overflowY-scroll max-height text-center"
+          >
             <div class="buttons"></div>
           </div>
         </div>
@@ -103,7 +112,9 @@
           aria-labelledby="panelFeedHeader"
           data-bs-parent="#panel"
         >
-          <div class="accordion-body">
+          <div
+            class="accordion-body overflowX-hidden overflowY-scroll max-height"
+          >
             <div class="events my-3"></div>
           </div>
         </div>
