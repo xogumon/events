@@ -183,7 +183,7 @@
 
               if (
                 role === 1 &&
-                /(https?:\/\/)?([\da-z\.-]+)\.([a-z]+)/.test(message)
+                /(https?:\/\/)?([\da-z\.-]+)\.([a-z]+)/i.test(message)
               )
                 return;
 
