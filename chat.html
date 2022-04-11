@@ -97,6 +97,7 @@
       }
 
       function attachEmotes(message, emotes) {
+        if (!message.length) return "";
         let text = html_encode(message);
         return text.replace(/([^\s]*)/gi, function (m, key) {
           let result = emotes.filter((emote) => {
@@ -138,7 +139,6 @@
             const { data, type } = evtData;
             if (type !== "message") return;
             const { data: event, status } = JSON.parse(data);
-            if (event) console.log(event);
             const roles = ["viewer", "vip", "mod", "streamer"];
 
             if (event?.name === "eventImage" && event?.lines?.length) {
@@ -180,6 +180,12 @@
                 isReply,
               } = event.message;
               const roleName = roles[role - 1];
+
+              if (
+                role === 1 &&
+                /(https?:\/\/)?([\da-z\.-]+)\.([a-z]+)/.test(message)
+              )
+                return;
 
               if (isCustomReward || isReply || hasBits) return;
               if (typeof color === "undefined") color = tinyColor.random();
