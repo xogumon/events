@@ -408,6 +408,15 @@
                       true
                     );
 
+                  case "RewardRedemption":
+                    return createToast(
+                      {
+                        title: `🗣️ Reward`,
+                        body: `${event?.data?.displayName} usou <strong>${event?.data?.title}</strong>`,
+                      },
+                      true
+                    );
+
                   default:
                     break;
                 }
