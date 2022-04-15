@@ -49,6 +49,7 @@
   </head>
 
   <body class="overflow-hidden w-100 vh-100">
+    <div id="emotes"></div>
     <div
       class="toast-container position-absolute bottom-0 end-0 p-3 overflow-hidden"
       id="toasts"
@@ -58,13 +59,7 @@
       import format from "https://esm.run/date-fns/format";
       import tinyColor from "https://esm.run/tinycolor2";
 
-      function RNG(min, max) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min)) + min;
-      }
-
-      function animateCSS(element, animation, prefix = "animate__") {
+      const animateCSS = (element, animation, prefix = "animate__") => {
         return new Promise((resolve, reject) => {
           const animationName = `${prefix}${animation}`;
           const node =
@@ -82,7 +77,171 @@
             once: true,
           });
         });
-      }
+      };
+
+      const random = (min = 0, max = 0) => {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        if (isNaN(min)) return 0;
+        if (isNaN(max) || !max) {
+          max = min;
+          min = 0;
+        }
+        const response = Math.floor(Math.random() * (max - min)) + min;
+        return isNaN(response) ? 0 : response;
+      };
+
+      const kappa = {
+        size: 1.5,
+        animationTime: 2000,
+        maxOnExplosion: 20,
+        show: function (emoteUrl, animation = "fadeUp") {
+          if (typeof emoteUrl !== "string") return;
+          const self = this;
+
+          let left = random(100, window.innerWidth - 200);
+          let top = random(100, window.innerHeight - 200);
+
+          let img = document.createElement("img");
+          img.src = emoteUrl;
+          img.style.top = `${top}px`;
+          img.style.left = `${left}px`;
+          img.style.position = "absolute";
+          img.style.maxHeight = `${self.size}rem`;
+          img.style.animationDelay = `${random(1000)}ms`;
+
+          let emotes = document.querySelector("#emotes");
+          emotes.append(img);
+
+          const animations = [
+            "bounce",
+            "bounceUp",
+            "fadeZoom",
+            "fadeUp",
+            "special",
+            "rotate",
+          ];
+          if (animation.toLowerCase() === "random")
+            animation = animations[random(animations.length)];
+
+          switch (animation) {
+            case "bounce":
+              animateCSS(img, "bounceIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "bounceOut").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "bounceUp":
+              animateCSS(img, "bounceInUp").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "bounceOutUp").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "rotate":
+              animateCSS(img, "rotateIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "rotateOut").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "special":
+              animateCSS(img, "jackInTheBox").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "hinge").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "fadeZoom":
+              animateCSS(img, "zoomIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "zoomOut").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "fadeUp":
+              animateCSS(img, "fadeInUp").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${this.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "fadeOutUp").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            default:
+              animateCSS(img, "fadeIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${this.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "fadeOut").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+          }
+        },
+        explode: function (arrayEmotes) {
+          if (typeof arrayEmotes === "object" && arrayEmotes.length) {
+            const self = this;
+
+            let left = random(100, window.innerWidth - 200);
+            let top = random(100, window.innerHeight - 200);
+
+            let emotes = document.querySelector("#emotes");
+
+            function explode(emoteUrl) {
+              let img = document.createElement("img");
+              img.src = emoteUrl;
+              img.style.top = `${top}px`;
+              img.style.left = `${left}px`;
+              img.style.position = "absolute";
+              img.style.maxHeight = `${self.size}rem`;
+              img.style.animationDelay = `${random(1000)}ms`;
+              emotes.append(img);
+              animateCSS(img, "zoomIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDelay = `${random(500)}ms`;
+                  const animeOut = [
+                    "fadeOut",
+                    "fadeOutDown",
+                    "fadeOutDownBig",
+                    "fadeOutLeft",
+                    "fadeOutLeftBig",
+                    "fadeOutRight",
+                    "fadeOutRightBig",
+                    "fadeOutUp",
+                    "fadeOutUpBig",
+                    "fadeOutTopLeft",
+                    "fadeOutTopRight",
+                    "fadeOutBottomRight",
+                    "fadeOutBottomLeft",
+                  ];
+                  animateCSS(img, animeOut[random(animeOut.length)]).then(() =>
+                    img.remove()
+                  );
+                }, random(1000))
+              );
+            }
+
+            let indexEmote = 0;
+            for (let i = 0; i < self.maxOnExplosion; i++) {
+              if (i >= arrayEmotes.length) indexEmote = 0;
+              explode(arrayEmotes[indexEmote]);
+              indexEmote++;
+            }
+          }
+        },
+      };
 
       function lumeColor(color, invert = false) {
         color = tinyColor(color);
@@ -182,8 +341,9 @@
               const roleName = roles[role - 1];
 
               if (
-                role === 1 &&
-                /(https?:\/\/)?([\da-z\.-]+)\.([a-z]+)/i.test(message)
+                /(https?)?(www.)?([a-z-_0-9])+\.{1}([a-z]+){2,5}(.*)?/i.test(
+                  message
+                )
               )
                 return;
 
@@ -191,14 +351,12 @@
               if (typeof color === "undefined") color = tinyColor.random();
 
               if (subscriber && emotes && emotes.length) {
+                // kappa.explode(emotes.map((emote) => emote.imageUrl));
                 emotes.map((emote, idx) => {
-                  const elEmote = document.createElement("img");
-                  elEmote.src = emote.imageUrl.replace("default", "static");
-                  elEmote.classList.add("position-absolute");
-                  elEmote.style.right = `${RNG(10, window.innerWidth - 10)}px`;
-                  elEmote.style.top = "0px";
-                  animateCSS(elEmote, "spin").then(() => elEmote.remove());
-                  document.body.append(elEmote);
+                  kappa.show(
+                    emote.imageUrl.replace("default", "static"),
+                    "random"
+                  );
                 });
               }
 
