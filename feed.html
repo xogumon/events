@@ -137,6 +137,7 @@
               message = html_encode(message);
               emotes = emotes.map((emote) => {
                 return {
+                  bits: !!emote.bits,
                   text: html_encode(
                     message.substring(emote.startIndex, emote.endIndex + 1)
                   ),
@@ -151,7 +152,9 @@
                 if (result && result.image)
                   return `<img class="emote" src="${result.image
                     .replace(/\/animated\/(.*)/i, "/static/$1")
-                    .replace(".gif", ".png")}"/>`;
+                    .replace(".gif", ".png")}"/>${
+                    result.bits ? result.text.replace(/[a-z]+/i, "") : ""
+                  }`;
                 return text;
               });
             }
@@ -409,13 +412,10 @@
                     );
 
                   case "RewardRedemption":
-                    return createToast(
-                      {
-                        title: `🗣️ Reward`,
-                        body: `${event?.data?.displayName} usou <strong>${event?.data?.title}</strong>`,
-                      },
-                      true
-                    );
+                    return createToast({
+                      title: `🗣️ Reward`,
+                      body: `${event?.data?.displayName} usou <strong>${event?.data?.title}</strong>`,
+                    });
 
                   default:
                     break;
