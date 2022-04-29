@@ -37,12 +37,12 @@
         transform-style: flat;
       }
       .goal-title {
-        z-index: 9999;
+        z-index: 5;
         transition: all 2s;
         transform: rotate(-6deg) translateY(8px);
         max-width: 100%;
         text-overflow: ellipsis;
-        font: 1rem;
+        font-size: 1rem;
         white-space: nowrap;
         padding: 5px;
         overflow: hidden;
@@ -57,7 +57,6 @@
         border-radius: 15px;
         background: rgb(85, 85, 85);
         border: 3px solid #2fc9c5;
-        font-size: 2rem;
       }
       .goal-progress-bar {
         width: 0%;
@@ -69,6 +68,8 @@
       }
       .goal-meta {
         position: absolute;
+        top: 18px;
+        font-size: 1.5rem;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -78,6 +79,7 @@
       }
       .goal-meta,
       .goal-amount {
+        z-index: 10;
         transition: all 300ms ease;
       }
       .goal-amount::before {
@@ -130,9 +132,9 @@
       <div class="goal-title">Meta: <span>0%</span></div>
       <div class="goal-bar">
         <div class="goal-progress-bar"></div>
-        <div class="goal-meta">
-          <span class="goal-amount" data-amount="0">0</span>/15 subs
-        </div>
+      </div>
+      <div class="goal-meta">
+        <span class="goal-amount" data-amount="0">0</span>/15 subs
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/fitty@2.3.0/dist/fitty.min.js"></script>
@@ -147,7 +149,7 @@
               JSON.stringify({
                 request: "Subscribe",
                 events: {
-                  fileWatcher: ["Changed"],
+                  fileWatcher: ["Changed", "Created"],
                 },
                 id: "subReSub",
               })
