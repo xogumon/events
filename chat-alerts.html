@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat w/ alerts</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css?family=Montserrat");
+      @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+      @import url("https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css");
+      * {
+        transform-style: preserve-3d;
+      }
+
+      body {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 400;
+      }
+
+      #emotes {
+          position: absolute;
+          top: 0;
+          left: 0;
+      }
+
+      .show {
+        opacity: 1 !important;
+      }
+
+      .hide {
+        opacity: 0 !important;
+      }
+
+      .emote {
+        max-width: 2rem;
+      }
+
+      .alert-container {
+        color: rgb(255, 255, 255);
+        font-size: 14px;
+        transform: skewY(176deg) !important;
+      }
+
+      .alert-title {
+        background: #d835aa;
+        border-radius: 20px;
+        padding: 8px 10px;
+        text-overflow: ellipsis;
+        top: -10px;
+        white-space: nowrap;
+      }
+
+      .alert-message {
+        background: #fff;
+        border-radius: 1rem;
+        box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+        color: #373d3f;
+        opacity: 0;
+        padding: 8px 10px;
+        top: 100px;
+      }
+
+      .alert-message::before {
+        border-bottom-color: #fff;
+        border-top: none;
+        border: 0.75rem solid transparent;
+        bottom: 100%;
+        content: "";
+        filter: drop-shadow(0 -0.0625rem 0.0625rem rgba(0, 0, 0, 0.1));
+        height: 0;
+        left: 50%;
+        position: absolute;
+        top: -10px;
+        width: 0;
+      }
+
+      .alert-box {
+        background: rgb(36, 6, 73);
+        border-radius: 15px;
+        border: 3px solid #2fc9c5;
+        height: 90px !important;
+        padding: 20px;
+      }
+
+      .alert-name {
+        font-size: 64px;
+        text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
+      }
+
+      span.animate__animated {
+        display: inline-block;
+      }
+
+      .alert-box.animate__animated:after {
+        animation: shine 4s ease;
+        background: rgba(255, 255, 255, 0.13);
+        background: linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0.13) 0%,
+          rgba(255, 255, 255, 0.13) 77%,
+          rgba(255, 255, 255, 0.5) 92%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        content: "";
+        height: 100%;
+        left: -200%;
+        opacity: 0;
+        position: absolute;
+        top: 0;
+        transform: rotate(30deg);
+        width: 200%;
+      }
+
+      @keyframes shine {
+        50% {
+          opacity: 1;
+        }
+
+        75% {
+          opacity: 1;
+          left: 200%;
+        }
+
+        100% {
+          opacity: 0;
+        }
+      }
+
+      /* WHEEL */
+      #wheelOfFortune {
+        display: inline-block;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #wheel {
+        display: block;
+      }
+
+      #spin {
+        font: 1.5em/0 sans-serif;
+        user-select: none;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 30%;
+        height: 30%;
+        margin: -15%;
+        background: #fff;
+        color: #fff;
+        box-shadow: 0 0 0 8px currentColor, 0 0px 15px 5px rgba(0, 0, 0, 0.6);
+        border-radius: 50%;
+        transition: 0.8s;
+      }
+
+      #spin::after {
+        content: "";
+        position: absolute;
+        top: -17px;
+        border: 10px solid transparent;
+        border-bottom-color: currentColor;
+        border-top: none;
+      }
+
+      .toast-body img {
+        max-height: 28px;
+      }
+
+      .toast-header img {
+        max-height: 18px;
+      }
+    </style>
+  </head>
+
+  <body class="overflow-hidden d-flex justify-content-center align-items-center vh-100">
+    <div id="wheelOfFortune" class="hide">
+      <canvas id="wheel" width="300" height="300"></canvas>
+      <div id="spin"></div>
+      <audio id="wheelAudio" preload="auto" autoplay="false" muted>
+        <source src="./wheel/spin.mp3" type="audio/mpeg" />
+      </audio>
+      <audio id="finishAudio" preload="auto" autoplay="false" muted>
+        <source src="./wheel/finish.mp3" type="audio/mpeg" />
+      </audio>
+    </div>
+    <div
+      class="alert-container position-absolute d-flex justify-content-center align-items-center hide"
+    >
+      <div class="alert-box position-relative overflow-hidden w-100">
+        <div
+          class="alert-name d-flex justify-content-center align-items-center fw-bold w-100 h-100"
+        >
+          <span id="username-container"></span>
+        </div>
+      </div>
+      <div class="alert-title position-absolute"></div>
+      <div class="alert-message position-absolute text-center hidden"></div>
+    </div>
+    <div id="emotes"></div>
+    <div
+      class="toast-container position-absolute bottom-0 end-0 p-3 overflow-hidden"
+      id="toasts"
+    ></div>
+    <script src="https://cdn.jsdelivr.net/npm/fitty@2.3.0/dist/fitty.min.js"></script>
+    <script type="module">
+      import Toast from "https://esm.run/bootstrap/js/dist/toast";
+      import format from "https://esm.run/date-fns/format";
+      import tinyColor from "https://esm.run/tinycolor2";
+
+      const queue = [];
+      let playing = false;
+
+      const animateCSS = (element, animation, prefix = "animate__") => {
+        return new Promise((resolve, reject) => {
+          const animationName = `${prefix}${animation}`;
+          const node =
+            typeof element === "object" &&
+            (element instanceof Node || element instanceof HTMLElement)
+              ? element
+              : document.querySelector(element);
+          node.classList.add(`${prefix}animated`, animationName);
+          function handleAnimationEnd(event) {
+            event.stopPropagation();
+            node.classList.remove(`${prefix}animated`, animationName);
+            resolve("Animation ended");
+          }
+          node.addEventListener("animationend", handleAnimationEnd, {
+            once: true,
+          });
+        });
+      };
+
+      const random = (min = 0, max = 0) => {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        if (isNaN(min)) return 0;
+        if (isNaN(max) || !max) {
+          max = min;
+          min = 0;
+        }
+        const response = Math.floor(Math.random() * (max - min)) + min;
+        return isNaN(response) ? 0 : response;
+      };
+
+      const kappa = {
+        size: 3,
+        animationTime: 2000,
+        maxOnExplosion: 20,
+        show: function (emoteUrl, animation = "fadeUp") {
+          if (typeof emoteUrl !== "string") return;
+          const self = this;
+
+          let left = random(100, window.innerWidth - 200);
+          let top = random(100, window.innerHeight - 200);
+
+          let img = document.createElement("img");
+          img.src = emoteUrl;
+          img.style.top = `${top}px`;
+          img.style.left = `${left}px`;
+          img.style.position = "absolute";
+          img.style.maxHeight = `${self.size}rem`;
+          img.style.animationDelay = `${random(1000)}ms`;
+
+          let emotes = document.querySelector("#emotes");
+          emotes.append(img);
+
+          const animations = [
+            "bounce",
+            "bounceUp",
+            "fadeZoom",
+            "fadeUp",
+            "special",
+            "rotate",
+          ];
+          if (animation.toLowerCase() === "random")
+            animation = animations[random(animations.length)];
+
+          switch (animation) {
+            case "bounce":
+              animateCSS(img, "bounceIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "bounceOut").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "bounceUp":
+              animateCSS(img, "bounceInUp").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "bounceOutUp").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "rotate":
+              animateCSS(img, "rotateIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "rotateOut").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "special":
+              animateCSS(img, "jackInTheBox").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "hinge").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "fadeZoom":
+              animateCSS(img, "zoomIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${self.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "zoomOut").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            case "fadeUp":
+              animateCSS(img, "fadeInUp").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${this.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "fadeOutUp").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+            default:
+              animateCSS(img, "fadeIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDuration = `${this.animationTime}ms`;
+                  img.style.animationDelay = `${random(1000)}ms`;
+                  animateCSS(img, "fadeOut").then(() => img.remove());
+                }, random(1000))
+              );
+              break;
+          }
+        },
+        explode: function (arrayEmotes) {
+          if (typeof arrayEmotes === "object" && arrayEmotes.length) {
+            const self = this;
+
+            let left = random(100, window.innerWidth - 200);
+            let top = random(100, window.innerHeight - 200);
+
+            let emotes = document.querySelector("#emotes");
+
+            function explode(emoteUrl) {
+              let img = document.createElement("img");
+              img.src = emoteUrl;
+              img.style.top = `${top}px`;
+              img.style.left = `${left}px`;
+              img.style.position = "absolute";
+              img.style.maxHeight = `${self.size}rem`;
+              img.style.animationDelay = `${random(1000)}ms`;
+              emotes.append(img);
+              animateCSS(img, "zoomIn").then(() =>
+                setTimeout(function () {
+                  img.style.animationDelay = `${random(500)}ms`;
+                  const animeOut = [
+                    "fadeOut",
+                    "fadeOutDown",
+                    "fadeOutDownBig",
+                    "fadeOutLeft",
+                    "fadeOutLeftBig",
+                    "fadeOutRight",
+                    "fadeOutRightBig",
+                    "fadeOutUp",
+                    "fadeOutUpBig",
+                    "fadeOutTopLeft",
+                    "fadeOutTopRight",
+                    "fadeOutBottomRight",
+                    "fadeOutBottomLeft",
+                  ];
+                  animateCSS(img, animeOut[random(animeOut.length - 1)]).then(
+                    () => img.remove()
+                  );
+                }, random(1000))
+              );
+            }
+
+            let indexEmote = 0;
+            for (let i = 0; i < self.maxOnExplosion; i++) {
+              if (i >= arrayEmotes.length) indexEmote = 0;
+              explode(arrayEmotes[indexEmote]);
+              indexEmote++;
+            }
+          }
+        },
+      };
+
+      function lumeColor(color, invert = false) {
+        color = tinyColor(color);
+        if (color.isLight()) {
+          if (invert) return "dark";
+          return "light";
+        }
+        if (color.isDark()) {
+          if (invert) return "light";
+          return "dark";
+        }
+      }
+
+      function attachEmotes(message, emotes) {
+        message = html_encode(message);
+        emotes = emotes?.map((emote) => {
+          return {
+            bits: !!emote.Bits,
+            text: html_encode(
+              message.substring(emote.StartIndex, emote.EndIndex + 1)
+            ),
+            image: emote.ImageUrl,
+          };
+        });
+        return message?.replace(/([^\s]*)/gi, function (text) {
+          if (!text.length) return text;
+          let result = emotes.find((emote) => emote.text === text);
+          if (result && result.image)
+            return `<img class="emote" src="${result.image}"/>${
+              result.bits ? result.text.replace(/[a-z]+/i, "") : ""
+            }`;
+          return text;
+        });
+      }
+
+      function html_encode(e) {
+        if (typeof e === "string") {
+          return e.replace(/[<>"^]/g, function (e) {
+            return `&#${e.charCodeAt(0)};`;
+          });
+        }
+      }
+
+      (function connectWs() {
+        if ("WebSocket" in window) {
+          const ws = new WebSocket("ws://localhost:8080/");
+
+          function spinWheel(cb) {
+            const sectors = [
+              { color: "#f82", label: "Nada" },
+              { color: "#0bf", label: "10" },
+              { color: "#fb0", label: "20" },
+              { color: "#0fb", label: "50" },
+              { color: "#b0f", label: "100" },
+              { color: "#f0b", label: "200" },
+              { color: "#bf0", label: "500" },
+            ];
+
+            const rand = (m, M) => Math.random() * (M - m) + m;
+
+            const wheelAudio = document.getElementById("wheelAudio");
+            const finishAudio = document.getElementById("finishAudio");
+            const wheelOfFortune = document.getElementById("wheelOfFortune");
+            const spin = document.getElementById("spin");
+            const ctx = document.getElementById("wheel").getContext("2d");
+            const tot = sectors.length;
+            const dia = ctx.canvas.width;
+            const rad = dia / 2;
+            const PI = Math.PI;
+            const TAU = 2 * PI;
+            const arc = TAU / sectors.length;
+
+            const friction = 0.98; // 0.995=soft, 0.99=mid, 0.98=hard
+
+            let ang = 0;
+            let angVel = 1;
+
+            const getIndex = () => Math.floor(tot - (ang / TAU) * tot) % tot;
+
+            function drawSector(sector, i) {
+              const ang = arc * i;
+              ctx.save();
+              ctx.beginPath();
+              ctx.fillStyle = sector.color;
+              ctx.moveTo(rad, rad);
+              ctx.arc(rad, rad, rad, ang, ang + arc);
+              ctx.lineTo(rad, rad);
+              ctx.fill();
+              ctx.translate(rad, rad);
+              ctx.rotate(ang + arc / 2);
+              ctx.textAlign = "right";
+              ctx.fillStyle = "#fff";
+              ctx.font = "bold 24px sans-serif";
+              ctx.fillText(sector.label, rad - 10, 10);
+              ctx.restore();
+            }
+
+            function spinWheelEngine() {
+              if (!angVel) return;
+              angVel *= friction;
+              if (angVel < 0.002) angVel = 0;
+              ang += angVel;
+              ang %= TAU;
+              const sector = sectors[getIndex()];
+              ctx.canvas.style.transform = `rotate(${ang - PI / 2}rad)`;
+              if (!angVel) {
+                setTimeout(function () {
+                  if (cb) cb(sector.label);
+                  animateCSS(wheelOfFortune, "fadeOut").then(() => {
+                    wheelOfFortune.classList.remove("show");
+                    wheelOfFortune.classList.add("hide");
+                    spin.style.background = "#fff";
+                    spin.textContent = "";
+                  });
+                }, 1000);
+                try {
+                  finishAudio.loop = false;
+                  finishAudio.muted = false;
+                  finishAudio.play();
+                } catch (e) {}
+              }
+              if (spin.textContent !== sector.label) {
+                spin.style.background = sector.color;
+                spin.textContent = sector.label;
+                try {
+                  wheelAudio.loop = false;
+                  wheelAudio.muted = false;
+                  wheelAudio.play();
+                } catch (e) {}
+              }
+              requestAnimationFrame(spinWheelEngine);
+            }
+            sectors.map(drawSector);
+            ctx.canvas.style.transform = `rotate(${ang - PI / 2}rad)`;
+            angVel = Math.random();
+            spinWheelEngine();
+            wheelOfFortune.classList.remove("hide");
+            wheelOfFortune.classList.add("show");
+            animateCSS(wheelOfFortune, "fadeIn");
+          }
+
+          async function alertEvent() {
+            if (queue.length <= 0 || playing) return;
+            playing = true;
+            const event = queue.shift();
+
+            if (event?.wheel) {
+              spinWheel((prize) =>
+                ws.send(
+                  JSON.stringify({
+                    request: "DoAction",
+                    action: {
+                      id: "73c63d67-9fbe-410b-accc-581ecbbe65fc",
+                    },
+                    args: {
+                      winner: event.name,
+                      targetUserName: event.name.toLowerCase(),
+                      prize: isNaN(prize) ? prize.toLowerCase() : `${prize} XP`,
+                      amount: isNaN(prize) ? 0 : prize,
+                    },
+                    id: "WheelOfFortune",
+                  })
+                )
+              );
+            }
+
+            const name = event.name ?? "anônimo",
+              emotes = event.emotes || [],
+              message = event.message,
+              animation = "wobble",
+              animate = (text, animation = "tada") =>
+                text
+                  ?.split("")
+                  .map((char, index) => {
+                    return `<span class="animate__animated animate__${animation} animate__infinite" style="animation-delay: ${index}00ms;">${char}</span>`;
+                  })
+                  .join("");
+
+            const alertContainer = document.querySelector(".alert-container"),
+              alertMessage = document.querySelector(".alert-message"),
+              alertTitle = document.querySelector(".alert-title"),
+              userNameContainer = document.querySelector("#username-container");
+
+            alertTitle.innerHTML = event.type;
+
+            userNameContainer.innerHTML = animate(name, "tada");
+
+            fitty("#username-container", {
+              minSize: 14,
+              maxSize: 64,
+            });
+
+            alertContainer.classList.remove("hide");
+            alertContainer.classList.add("show");
+
+            animateCSS(".alert-container", "fadeIn");
+            animateCSS(".alert-box", animation);
+            animateCSS(".alert-title", animation);
+            await animateCSS(".alert-name", animation);
+
+            if (typeof message === "string" && message.length > 0) {
+              alertMessage.innerHTML = attachEmotes(message, emotes);
+              alertMessage.classList.remove("hide");
+              alertMessage.classList.add("show");
+              await animateCSS(".alert-message", "fadeIn");
+              hideEvent();
+            } else {
+              hideEvent();
+            }
+
+            function hideEvent() {
+              setTimeout(function () {
+                animateCSS(".alert-container", "hinge").then(() => {
+                  alertContainer.classList.remove("show");
+                  alertContainer.classList.add("hide");
+                  alertMessage.classList.remove("show");
+                  alertMessage.classList.add("hide");
+                  playing = false;
+                  alertEvent();
+                });
+              }, event.timeout ?? 4000);
+            }
+          }
+
+          ws.onopen = function () {
+            ws.send(
+              JSON.stringify({
+                request: "Subscribe",
+                events: {
+                  general: ["Custom"],
+                  fileWatcher: ["Changed"],
+                },
+                id: "chatEvents",
+              })
+            );
+          };
+
+          ws.onmessage = async (evtData) => {
+            const roles = ["viewer", "vip", "mod", "streamer"];
+            const { data, type } = evtData;
+
+            let event = JSON.parse(data)?.data;
+            event = event?.hasOwnProperty("data")
+              ? JSON.parse(event.data)
+              : null;
+
+            console.log(event, data, type);
+
+            if (event?.isAlert) {
+              queue.push({
+                type: event?.eventName,
+                name: event?.user || event?.userName,
+                wheel: event?.spinWheel ?? false,
+                message: event?.message || event?.messageStripped,
+                emotes: event?.cheerEmoteCount
+                  ? event?.cheerEmotes
+                  : event?.emoteCount
+                  ? event?.emotes
+                  : [],
+              });
+              alertEvent();
+            }
+
+            if (event?.name === "eventImage") {
+              const image = document.createElement("img");
+              image.src = event.line0;
+              image.style.maxHeight = "250px";
+              const content = document.createElement("div");
+              content.append(image);
+              content.classList.add(
+                "position-absolute",
+                "h-100",
+                "w-100",
+                "d-flex",
+                "justify-content-center",
+                "align-items-center"
+              );
+              document.body.append(content);
+              animateCSS(image, "fadeIn").then(() =>
+                animateCSS(image, "rubberBand").then(() =>
+                  animateCSS(image, "fadeOut").then(() => content.remove())
+                )
+              );
+            }
+
+            if (event?.chatMessage) {
+              let { color } = event;
+              const {
+                msgId,
+                userName: username,
+                user: displayName,
+                isSubscribed: subscriber,
+                role,
+                emotes,
+                message,
+                isAction: isMe,
+                isHighlight: isHighlighted,
+                isCustomReward,
+                isReply,
+                targetUserProfileImageUrl: profilePic,
+              } = event;
+              const hasBits = !!event.bits;
+              const roleName = roles[role - 1];
+
+              if (
+                /(https?)?(www.)?([a-z-_0-9])+\.{1}([a-z]+){2,5}(.*)?/i.test(
+                  message
+                )
+              )
+                return;
+
+              if (isCustomReward || isReply || hasBits) return;
+              if (typeof color === "undefined") color = tinyColor.random();
+
+              if (subscriber && emotes && emotes.length) {
+                // kappa.explode(emotes.map((emote) => emote.imageUrl));
+                emotes.map((emote, idx) => {
+                  kappa.show(
+                    emote.ImageUrl.replace("default", "static"),
+                    "random"
+                  );
+                });
+              }
+
+              const toast = document.createElement("div");
+              toast.id = msgId;
+              toast.classList.add("toast");
+              if (isHighlighted) toast.classList.add("bg-dark", "text-light");
+              toast.ariaAtomic = true;
+              toast.ariaLive = "assertive";
+              toast.setAttribute("role", "chat");
+              toast.innerHTML = `
+      <div class="toast-header text-${lumeColor(
+        color,
+        true
+      )}" style="background-color: ${color};">
+        <img src="${profilePic}" class="img-fluid rounded-circle me-2">
+        <span class="me-auto fw-bold fs-6">${displayName}</span>
+        <small>${format(new Date(), "HH:mm")}</small>
+      </div>
+      <div class="toast-body ${
+        isMe ? "fst-italic" : "fst-normal"
+      }">${attachEmotes(message, emotes)}</div>
+      `;
+              document.getElementById("toasts").append(toast);
+
+              animateCSS(toast, "fadeInRight").then(() => {
+                setTimeout(() => {
+                  animateCSS(toast, "fadeOutRight").then(() => toast.remove());
+                }, 4000);
+              });
+
+              new Toast(toast, {
+                animation: false,
+                autohide: false,
+              }).show();
+            }
+          };
+
+          ws.onclose = function () {
+            setTimeout(connectWs, 10000);
+          };
+        }
+      })();
+    </script>
+  </body>
+</html>
