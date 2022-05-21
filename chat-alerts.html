@@ -18,12 +18,6 @@
         font-weight: 400;
       }
 
-      #emotes {
-          position: absolute;
-          top: 0;
-          left: 0;
-      }
-
       .show {
         opacity: 1 !important;
       }
@@ -177,7 +171,9 @@
     </style>
   </head>
 
-  <body class="overflow-hidden d-flex justify-content-center align-items-center vh-100">
+  <body
+    class="overflow-hidden d-flex justify-content-center align-items-center vh-100"
+  >
     <div id="wheelOfFortune" class="hide">
       <canvas id="wheel" width="300" height="300"></canvas>
       <div id="spin"></div>
@@ -201,11 +197,11 @@
       <div class="alert-title position-absolute"></div>
       <div class="alert-message position-absolute text-center hidden"></div>
     </div>
-    <div id="emotes"></div>
     <div
       class="toast-container position-absolute bottom-0 end-0 p-3 overflow-hidden"
       id="toasts"
     ></div>
+    <div id="emotes" class="position-absolute start-0 top-0"></div>
     <script src="https://cdn.jsdelivr.net/npm/fitty@2.3.0/dist/fitty.min.js"></script>
     <script type="module">
       import Toast from "https://esm.run/bootstrap/js/dist/toast";
@@ -263,7 +259,7 @@
           img.style.top = `${top}px`;
           img.style.left = `${left}px`;
           img.style.position = "absolute";
-          img.style.maxHeight = `${self.size}rem`;
+          img.style.height = `${self.size}rem`;
           img.style.animationDelay = `${random(1000)}ms`;
 
           let emotes = document.querySelector("#emotes");
@@ -643,8 +639,6 @@
             event = event?.hasOwnProperty("data")
               ? JSON.parse(event.data)
               : null;
-
-            console.log(event, data, type);
 
             if (event?.isAlert) {
               queue.push({
