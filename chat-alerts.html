@@ -345,50 +345,10 @@
         explode: function (arrayEmotes) {
           if (typeof arrayEmotes === "object" && arrayEmotes.length) {
             const self = this;
-
-            let left = random(100, window.innerWidth - 200);
-            let top = random(100, window.innerHeight - 200);
-
-            let emotes = document.querySelector("#emotes");
-
-            function explode(emoteUrl) {
-              let img = document.createElement("img");
-              img.src = emoteUrl;
-              img.style.top = `${top}px`;
-              img.style.left = `${left}px`;
-              img.style.position = "absolute";
-              img.style.maxHeight = `${self.size}rem`;
-              img.style.animationDelay = `${random(1000)}ms`;
-              emotes.append(img);
-              animateCSS(img, "zoomIn").then(() =>
-                setTimeout(function () {
-                  img.style.animationDelay = `${random(500)}ms`;
-                  const animeOut = [
-                    "fadeOut",
-                    "fadeOutDown",
-                    "fadeOutDownBig",
-                    "fadeOutLeft",
-                    "fadeOutLeftBig",
-                    "fadeOutRight",
-                    "fadeOutRightBig",
-                    "fadeOutUp",
-                    "fadeOutUpBig",
-                    "fadeOutTopLeft",
-                    "fadeOutTopRight",
-                    "fadeOutBottomRight",
-                    "fadeOutBottomLeft",
-                  ];
-                  animateCSS(img, animeOut[random(animeOut.length - 1)]).then(
-                    () => img.remove()
-                  );
-                }, random(1000))
-              );
-            }
-
             let indexEmote = 0;
             for (let i = 0; i < self.maxOnExplosion; i++) {
               if (i >= arrayEmotes.length) indexEmote = 0;
-              explode(arrayEmotes[indexEmote]);
+              self.show(arrayEmotes[indexEmote], "random");
               indexEmote++;
             }
           }
@@ -411,11 +371,11 @@
         message = html_encode(message);
         emotes = emotes?.map((emote) => {
           return {
-            bits: !!emote.Bits,
+            bits: !!emote.bits,
             text: html_encode(
-              message.substring(emote.StartIndex, emote.EndIndex + 1)
+              message.substring(emote.startIndex, emote.endIndex + 1)
             ),
-            image: emote.ImageUrl,
+            image: emote.imageUrl,
           };
         });
         return message?.replace(/([^\s]*)/gi, function (text) {
@@ -640,6 +600,8 @@
               ? JSON.parse(event.data)
               : null;
 
+              console.log(event)
+
             if (event?.isAlert) {
               queue.push({
                 type: event?.eventName,
@@ -691,7 +653,9 @@
                 isHighlight: isHighlighted,
                 isCustomReward,
                 isReply,
+                KappaGen,
                 targetUserProfileImageUrl: profilePic,
+                badges
               } = event;
               const hasBits = !!event.bits;
               const roleName = roles[role - 1];
@@ -704,16 +668,19 @@
                 return;
 
               if (isCustomReward || isReply || hasBits) return;
-              if (typeof color === "undefined") color = tinyColor.random();
+              if (typeof color !== "string") color = tinyColor.random();
 
               if (subscriber && emotes && emotes.length) {
-                // kappa.explode(emotes.map((emote) => emote.imageUrl));
-                emotes.map((emote, idx) => {
-                  kappa.show(
-                    emote.ImageUrl.replace("default", "static"),
-                    "random"
-                  );
-                });
+                if (KappaGen) {
+                  kappa.explode(emotes.map((emote) => emote.imageUrl.replace("default", "static")));
+                } else {
+                  emotes.map((emote, idx) => {
+                    kappa.show(
+                      emote.imageUrl.replace("default", "static"),
+                      "random"
+                    );
+                  });
+                }
               }
 
               const toast = document.createElement("div");
@@ -730,6 +697,7 @@
       )}" style="background-color: ${color};">
         <img src="${profilePic}" class="img-fluid rounded-circle me-2">
         <span class="me-auto fw-bold fs-6">${displayName}</span>
+        ${badges.map(bdg=>`<img src="${bdg.imageUrl}" alt="${bdg.name}" class="img-fluid me-1">`).join("")} 
         <small>${format(new Date(), "HH:mm")}</small>
       </div>
       <div class="toast-body ${
