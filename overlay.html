@@ -8,9 +8,12 @@
     <style>
       @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
       @import url("https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css");
+      /* body {
+        background-image: url("bg-teste.png");
+      } */
       #camera {
-        width: 440px;
         display: flex;
+        border-radius: 15px;
         align-items: center;
         justify-content: center;
         overflow: hidden;
@@ -25,11 +28,14 @@
         background-size: 200% 200%;
       }
       #camera .camera {
+        border-radius: 10px;
         background-color: #000;
+        width: 235px;
+        height: 315px;
       }
-      #camera .live {
-        height: 24px;
-        width: 24px;
+      .live {
+        height: 18px;
+        width: 18px;
         border-radius: 50%;
         background-color: #ff3434;
         animation: pulse 1.5s infinite;
@@ -39,7 +45,7 @@
           box-shadow: #ff3434 0 0 0 0;
         }
         75% {
-          box-shadow: #ff343400 0 0 0 16px;
+          box-shadow: #ff343400 0 0 0 14px;
         }
       }
       @keyframes overlay {
@@ -54,13 +60,12 @@
   </head>
 
   <body class="overflow-hidden w-100 vh-100">
-    <div id="camera" class="overflow-hidden position-absolute end-0">
-      <div class="camera ratio ratio-16x9 m-2">
-        <div class="m-2 d-flex">
-          <div class="live"></div>
-          <div class="text-light ms-2">AO VIVO</div>
-        </div>
-      </div>
+    <div id="camera" class="overflow-hidden position-absolute end-0 m-3">
+      <div class="camera m-2"></div>
+    </div>
+    <div class="m-2 d-flex position-absolute start-0 bottom-0 align-items-center">
+      <div class="live"></div>
+      <div class="text-light ms-2">AO VIVO</div>
     </div>
   </body>
 </html>
