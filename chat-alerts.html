@@ -246,7 +246,7 @@
       const kappa = {
         size: 3,
         animationTime: 2000,
-        maxOnExplosion: 20,
+        maxOnExplosion: 40,
         show: function (emoteUrl, animation = "fadeUp") {
           if (typeof emoteUrl !== "string") return;
           const self = this;
@@ -617,7 +617,7 @@
               alertEvent();
             }
 
-            if (event?.name === "eventImage") {
+            if (event?.fileName === "eventImage.txt" && !event?.empty) {
               const image = document.createElement("img");
               image.src = event.line0;
               image.style.maxHeight = "250px";
@@ -660,13 +660,6 @@
               const hasBits = !!event.bits;
               const roleName = roles[role - 1];
 
-              if (
-                /(https?)?(www.)?([a-z-_0-9])+\.{1}([a-z]+){2,5}(.*)?/i.test(
-                  message
-                )
-              )
-                return;
-
               if (isCustomReward || isReply || hasBits) return;
               if (typeof color !== "string") color = tinyColor.random();
 
@@ -697,7 +690,7 @@
       )}" style="background-color: ${color};">
         <img src="${profilePic}" class="img-fluid rounded-circle me-2">
         <span class="me-auto fw-bold fs-6">${displayName}</span>
-        ${badges.map(bdg=>`<img src="${bdg.imageUrl}" alt="${bdg.name}" class="img-fluid me-1">`).join("")} 
+        ${badges.map(bdg=>`<img src="${bdg.imageUrl}" alt="${bdg.name}" class="img-fluid me-2">`).join("")} 
         <small>${format(new Date(), "HH:mm")}</small>
       </div>
       <div class="toast-body ${
