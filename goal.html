@@ -156,14 +156,13 @@
             );
           };
 
-          ws.onmessage = function (event) {
-            try {
-              fetch("../../data/subs.txt")
-                .then((response) => response.text())
-                .then((subs) => updateBar(parseInt(subs)));
-            } catch (err) {
-              console.log(err);
-            }
+          ws.onmessage = async (evtData) => {
+            const { data } = evtData;
+            let event = JSON.parse(data ?? "{}");
+            event = event.data ?? event;
+
+            if (event?.fileName === "subs.txt" && event?.lines.length)
+              updateBar(parseInt(event.lines[0]));
           };
 
           ws.onclose = function () {
@@ -196,7 +195,7 @@
             percentage = 0;
           function updateBar(newAmount) {
             if (newAmount === curAmount) return;
-            curAmount = newAmount;
+            curAmount = isNaN(newAmount) ? 0 : newAmount;
             percentage = (curAmount / goalMeta) * 100;
             const goalAmount = document.querySelector(".goal-amount");
             const goalPercentage = document.querySelector(".goal-title span");

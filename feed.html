@@ -425,6 +425,7 @@
 
             ws.onclose = function () {
               setTimeout(connectWs, 10000);
+              document.location.reload();
             };
           }
         })();

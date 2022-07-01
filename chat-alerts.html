@@ -198,7 +198,7 @@
       <div class="alert-message position-absolute text-center hidden"></div>
     </div>
     <div
-      class="toast-container position-absolute bottom-0 end-0 p-3 overflow-hidden"
+      class="toast-container position-absolute bottom-0 start-0 p-3 overflow-hidden"
       id="toasts"
     ></div>
     <div id="emotes" class="position-absolute start-0 top-0"></div>
@@ -239,14 +239,15 @@
           max = min;
           min = 0;
         }
-        const response = Math.floor(Math.random() * (max - min)) + min;
+        const response = Math.floor(Math.random() * (max - min + 1)) + min;
         return isNaN(response) ? 0 : response;
       };
 
       const kappa = {
-        size: 3,
+        minSize: 3,
+        maxSize: 6,
         animationTime: 2000,
-        maxOnExplosion: 40,
+        maxOnExplosion: 60,
         show: function (emoteUrl, animation = "fadeUp") {
           if (typeof emoteUrl !== "string") return;
           const self = this;
@@ -259,8 +260,9 @@
           img.style.top = `${top}px`;
           img.style.left = `${left}px`;
           img.style.position = "absolute";
-          img.style.height = `${self.size}rem`;
+          img.style.height = `${random(self.minSize, self.maxSize)}rem`;
           img.style.animationDelay = `${random(1000)}ms`;
+          img.style.transform = `rotate(${random(360)}deg)`;
 
           let emotes = document.querySelector("#emotes");
           emotes.append(img);
@@ -600,7 +602,7 @@
               ? JSON.parse(event.data)
               : null;
 
-              console.log(event)
+            console.log(event);
 
             if (event?.isAlert) {
               queue.push({
@@ -655,7 +657,7 @@
                 isReply,
                 KappaGen,
                 targetUserProfileImageUrl: profilePic,
-                badges
+                badges,
               } = event;
               const hasBits = !!event.bits;
               const roleName = roles[role - 1];
@@ -665,7 +667,11 @@
 
               if (subscriber && emotes && emotes.length) {
                 if (KappaGen) {
-                  kappa.explode(emotes.map((emote) => emote.imageUrl.replace("default", "static")));
+                  kappa.explode(
+                    emotes.map((emote) =>
+                      emote.imageUrl.replace("default", "static")
+                    )
+                  );
                 } else {
                   emotes.map((emote, idx) => {
                     kappa.show(
@@ -690,7 +696,12 @@
       )}" style="background-color: ${color};">
         <img src="${profilePic}" class="img-fluid rounded-circle me-2">
         <span class="me-auto fw-bold fs-6">${displayName}</span>
-        ${badges.map(bdg=>`<img src="${bdg.imageUrl}" alt="${bdg.name}" class="img-fluid me-2">`).join("")} 
+        ${badges
+          .map(
+            (bdg) =>
+              `<img src="${bdg.imageUrl}" alt="${bdg.name}" class="img-fluid me-2">`
+          )
+          .join("")} 
         <small>${format(new Date(), "HH:mm")}</small>
       </div>
       <div class="toast-body ${

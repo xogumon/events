@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Goal</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css?family=Montserrat");
+      @import url("https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css");
+      @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+
+      body {
+        font-family: "Montserrat", sans-serif;
+        font-size: 1.6rem;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .show {
+        opacity: 1 !important;
+      }
+
+      .hide {
+        opacity: 0 !important;
+      }
+    </style>
+  </head>
+
+  <body
+    class="overflow-hidden d-flex justify-content-center align-items-center vh-100"
+  >
+    <div class="goal">
+      <div class="title">Meta: <span class="progress">0%</span></div>
+      <div class="progressbar">
+      </div>
+      <div class="meta">
+        <span class="amount" data-amount="0">0</span>/<span class="total">0</span>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/fitty@2.3.0/dist/fitty.min.js"></script>
+    <script type="module">
+      (function connectWs() {
+        if ("WebSocket" in window) {
+          const ws = new WebSocket("ws://localhost:8080/");
+
+          ws.onopen = function () {
+            ws.send(
+              JSON.stringify({
+                request: "Subscribe",
+                events: {
+                  fileWatcher: ["Changed", "Created"],
+                },
+                id: "subReSub",
+              })
+            );
+          };
+
+          ws.onmessage = function (event) {
+            try {
+              fetch("../../data/subs.txt")
+                .then((response) => response.text())
+                .then((subs) => updateBar(parseInt(subs)));
+            } catch (err) {
+              console.log(err);
+            }
+          };
+
+          ws.onclose = function () {
+            setTimeout(connectWs, 10000);
+          };
+
+          function animateCSS(element, animation, prefix = "animate__") {
+            return new Promise((resolve, reject) => {
+              const animationName = `${prefix}${animation}`;
+              const node =
+                typeof element === "object" &&
+                (element instanceof Node || element instanceof HTMLElement)
+                  ? element
+                  : document.querySelector(element);
+              node.classList.add(`${prefix}animated`, animationName);
+              function handleAnimationEnd(event) {
+                event.stopPropagation();
+                node.classList.remove(`${prefix}animated`, animationName);
+                resolve("Animation ended");
+              }
+              node.addEventListener("animationend", handleAnimationEnd, {
+                once: true,
+              });
+            });
+          }
+
+          let goalMeta = 25,
+            curAmount = 0,
+            percentage = 0;
+          function updateBar(newAmount) {
+            if (newAmount === curAmount) return;
+            curAmount = newAmount;
+            percentage = (curAmount / goalMeta) * 100;
+            const goalAmount = document.querySelector(".goal-amount");
+            const goalPercentage = document.querySelector(".goal-title span");
+            const goalProgressBar =
+              document.querySelector(".goal-progress-bar");
+            goalAmount.innerText = curAmount;
+            goalAmount.dataset.amount = curAmount;
+            goalPercentage.innerText = `${parseFloat(percentage).toFixed(2)}%`;
+            animateCSS(".goal", "flash").then(() => {
+              goalProgressBar.style.width = `${Math.min(100, percentage)}%`;
+              animateCSS(goalAmount, "heartBeat");
+            });
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
